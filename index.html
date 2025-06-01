@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sears Home Services - Scenario Planner v4</title>
+    <title>Sears Home Services - Scenario Planner v5.0</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
@@ -20,7 +20,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1500px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
@@ -46,9 +46,18 @@
             opacity: 0.9;
         }
 
+        .version-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            margin-top: 10px;
+            display: inline-block;
+        }
+
         .main-content {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 380px 1fr;
             gap: 0;
             min-height: 800px;
         }
@@ -58,6 +67,7 @@
             padding: 30px;
             border-right: 1px solid #e9ecef;
             overflow-y: auto;
+            max-height: 800px;
         }
 
         .results-area {
@@ -66,7 +76,7 @@
         }
 
         .input-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
 
         .input-group label {
@@ -92,6 +102,43 @@
             box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #667eea;
+        }
+
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active::after {
+            transform: translateX(26px);
+        }
+
         .dma-section {
             background: white;
             padding: 20px;
@@ -109,11 +156,13 @@
         .dma-inputs {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 10px;
+            gap: 8px;
         }
 
         .dma-inputs input {
             margin-bottom: 8px;
+            font-size: 13px;
+            padding: 8px;
         }
 
         .btn {
@@ -227,11 +276,13 @@
             font-weight: 600;
             color: #333;
             border-bottom: 2px solid #e9ecef;
+            font-size: 0.9rem;
         }
 
         td {
             padding: 12px 15px;
             border-bottom: 1px solid #e9ecef;
+            font-size: 0.9rem;
         }
 
         tr:hover {
@@ -250,13 +301,31 @@
         .capacity-warning {
             background: #fff3cd;
             color: #856404;
-            padding: 8px 12px;
+            padding: 6px 10px;
             border-radius: 6px;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
         }
 
-        @media (max-width: 1024px) {
+        .coupon-indicator {
+            background: #d4edda;
+            color: #155724;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .assumptions-log {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        @media (max-width: 1200px) {
             .main-content {
                 grid-template-columns: 1fr;
             }
@@ -264,6 +333,7 @@
             .sidebar {
                 border-right: none;
                 border-bottom: 1px solid #e9ecef;
+                max-height: none;
             }
         }
     </style>
@@ -272,7 +342,8 @@
     <div class="container">
         <div class="header">
             <h1>Sears Home Services</h1>
-            <p>Media Planning Scenario Planner v4.0</p>
+            <p>Media Planning Scenario Planner</p>
+            <div class="version-badge">v5.0 • Enhanced with Proxy Data</div>
         </div>
         
         <div class="main-content">
@@ -281,7 +352,7 @@
                     <label>Scenario Mix</label>
                     <select id="mixSelect">
                         <option value="Efficiency">Efficiency Focus</option>
-                        <option value="Balanced" selected>Balanced</option>
+                        <option value="Balanced_v2" selected>Balanced v2 (Enhanced)</option>
                         <option value="Awareness">Awareness Focus</option>
                     </select>
                 </div>
@@ -295,9 +366,9 @@
                     </select>
                 </div>
 
-                <div class="input-group">
-                    <label>Booking Rate (%)</label>
-                    <input type="number" id="bookingRate" value="25" min="1" max="100">
+                <div class="toggle-group">
+                    <label>Coupon Offer (Price-Sensitive DMAs)</label>
+                    <div class="toggle-switch active" id="couponToggle" onclick="toggleCoupon()"></div>
                 </div>
 
                 <div class="input-group">
@@ -306,13 +377,13 @@
                 </div>
 
                 <div class="input-group">
-                    <label>Average Ticket ($)</label>
-                    <input type="number" id="avgTicket" value="179" min="1">
+                    <label>Gross Margin (%)</label>
+                    <input type="number" id="grossMargin" value="30" min="1" max="100">
                 </div>
 
                 <div class="input-group">
-                    <label>Gross Margin (%)</label>
-                    <input type="number" id="grossMargin" value="30" min="1" max="100">
+                    <label>Measurement Reserve (%)</label>
+                    <input type="number" id="measurementPct" value="4" min="0" max="10">
                 </div>
 
                 <div id="dmaInputs">
@@ -328,6 +399,7 @@
                     <button class="tab-btn active" onclick="showTab('summary')">Summary</button>
                     <button class="tab-btn" onclick="showTab('detailed')">Detailed Results</button>
                     <button class="tab-btn" onclick="showTab('charts')">Charts</button>
+                    <button class="tab-btn" onclick="showTab('assumptions')">Assumptions Log</button>
                 </div>
 
                 <div id="summary" class="tab-content active">
@@ -345,6 +417,7 @@
                                     <th>Gross Profit</th>
                                     <th>ROI</th>
                                     <th>Capacity</th>
+                                    <th>Coupon</th>
                                 </tr>
                             </thead>
                             <tbody id="summaryTableBody">
@@ -365,6 +438,7 @@
                                     <th>Creates</th>
                                     <th>Completed</th>
                                     <th>Profit</th>
+                                    <th>Eff. CPL</th>
                                 </tr>
                             </thead>
                             <tbody id="detailedTableBody">
@@ -379,8 +453,18 @@
                         <canvas id="spendChart" width="400" height="200"></canvas>
                     </div>
                     <div class="chart-container">
-                        <h3>Channel Performance</h3>
+                        <h3>Channel ROI Performance</h3>
                         <canvas id="channelChart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>Booking Rate by DMA</h3>
+                        <canvas id="bookingChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+
+                <div id="assumptions" class="tab-content">
+                    <div class="assumptions-log" id="assumptionsLog">
+                        <!-- Assumptions will be populated here -->
                     </div>
                 </div>
             </div>
@@ -392,13 +476,51 @@
         var currentResults = [];
         var spendChart = null;
         var channelChart = null;
+        var bookingChart = null;
+        var addCoupon = true;
 
-        // Data from Python script
+        // Enhanced v5.0 data based on proxy analysis
         var dmaData = [
-            {name: "Orlando", ownerHomes: 642000, spanishShare: 0.25, quarterlyTAM: 16000, spend: 100000, techs: 45},
-            {name: "Miami/Ft. Lauderdale", ownerHomes: 1420000, spanishShare: 0.60, quarterlyTAM: 35000, spend: 150000, techs: 110},
-            {name: "Jacksonville", ownerHomes: 460000, spanishShare: 0.10, quarterlyTAM: 10000, spend: 80000, techs: 35},
-            {name: "Atlanta", ownerHomes: 1540000, spanishShare: 0.18, quarterlyTAM: 39000, spend: 180000, techs: 120}
+            {
+                name: "Orlando", 
+                spanishShare: 0.23, 
+                spend: 100000, 
+                bookingBase: 0.25, 
+                avgTicket: 171, 
+                cplUplift: 1.00, 
+                techs: 45,
+                priceSensitive: true
+            },
+            {
+                name: "Miami/Ft. Lauderdale", 
+                spanishShare: 0.68, 
+                spend: 150000, 
+                bookingBase: 0.25, 
+                avgTicket: 187, 
+                cplUplift: 1.10, 
+                techs: 110,
+                priceSensitive: false
+            },
+            {
+                name: "Jacksonville", 
+                spanishShare: 0.09, 
+                spend: 80000, 
+                bookingBase: 0.25, 
+                avgTicket: 165, 
+                cplUplift: 1.00, 
+                techs: 35,
+                priceSensitive: true
+            },
+            {
+                name: "Atlanta", 
+                spanishShare: 0.15, 
+                spend: 180000, 
+                bookingBase: 0.25, 
+                avgTicket: 181, 
+                cplUplift: 1.05, 
+                techs: 120,
+                priceSensitive: false
+            }
         ];
 
         var channels = {
@@ -410,14 +532,14 @@
             "Static_OOH": {type: "CPM", unitCost: 7.0}
         };
 
+        // Enhanced mixes based on proxy insights
         var mixes = {
             "Efficiency": {"LSA": 0.45, "Search": 0.30, "Meta": 0.15, "CTV": 0.05, "pDOOH": 0.03, "Static_OOH": 0.02},
-            "Balanced": {"LSA": 0.30, "Search": 0.25, "Meta": 0.20, "CTV": 0.15, "pDOOH": 0.07, "Static_OOH": 0.03},
+            "Balanced_v2": {"LSA": 0.28, "Search": 0.25, "Meta": 0.25, "CTV": 0.15, "pDOOH": 0.05, "Static_OOH": 0.02},
             "Awareness": {"LSA": 0.20, "Search": 0.20, "Meta": 0.25, "CTV": 0.25, "pDOOH": 0.07, "Static_OOH": 0.03}
         };
 
         var sensitivity = {"Low": 0.8, "Base": 1.0, "High": 1.2};
-        var measurementPct = 0.04;
         var callsPerTechPerDay = 6;
 
         // Helper functions
@@ -431,7 +553,18 @@
             return '$' + Math.round(num).toLocaleString();
         }
 
-        // Initialize DMA inputs
+        function toggleCoupon() {
+            addCoupon = !addCoupon;
+            var toggle = document.getElementById('couponToggle');
+            if (addCoupon) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            calculateScenarios();
+        }
+
+        // Initialize DMA inputs with enhanced v5.0 parameters
         function initializeDMAInputs() {
             var container = document.getElementById('dmaInputs');
             container.innerHTML = '';
@@ -443,10 +576,12 @@
                 section.innerHTML = 
                     '<h3>' + dma.name + '</h3>' +
                     '<div class="dma-inputs">' +
-                        '<input type="number" id="spend_' + i + '" value="' + dma.spend + '" placeholder="Quarterly Spend">' +
+                        '<input type="number" id="spend_' + i + '" value="' + dma.spend + '" placeholder="3-Mo Spend">' +
                         '<input type="number" id="spanish_' + i + '" value="' + Math.round(dma.spanishShare * 100) + '" min="0" max="100" placeholder="Spanish %">' +
-                        '<input type="number" id="homes_' + i + '" value="' + dma.ownerHomes + '" placeholder="Owner Homes">' +
-                        '<input type="number" id="tam_' + i + '" value="' + dma.quarterlyTAM + '" placeholder="Quarterly TAM">' +
+                        '<input type="number" id="booking_' + i + '" value="' + Math.round(dma.bookingBase * 100) + '" min="1" max="100" placeholder="Booking Base %">' +
+                        '<input type="number" id="ticket_' + i + '" value="' + dma.avgTicket + '" placeholder="Avg Ticket $">' +
+                        '<input type="number" id="cpl_' + i + '" value="' + dma.cplUplift.toFixed(2) + '" min="0.5" max="2" step="0.05" placeholder="CPL Uplift">' +
+                        '<input type="number" id="techs_' + i + '" value="' + dma.techs + '" placeholder="Technicians">' +
                     '</div>';
                 container.appendChild(section);
             }
@@ -458,11 +593,13 @@
                 var dma = dmaData[i];
                 results.push({
                     name: dma.name,
-                    techs: dma.techs,
+                    priceSensitive: dma.priceSensitive,
                     spend: parseInt(document.getElementById('spend_' + i).value) || dma.spend,
                     spanishShare: (parseInt(document.getElementById('spanish_' + i).value) || Math.round(dma.spanishShare * 100)) / 100,
-                    ownerHomes: parseInt(document.getElementById('homes_' + i).value) || dma.ownerHomes,
-                    quarterlyTAM: parseInt(document.getElementById('tam_' + i).value) || dma.quarterlyTAM
+                    bookingBase: (parseInt(document.getElementById('booking_' + i).value) || Math.round(dma.bookingBase * 100)) / 100,
+                    avgTicket: parseInt(document.getElementById('ticket_' + i).value) || dma.avgTicket,
+                    cplUplift: parseFloat(document.getElementById('cpl_' + i).value) || dma.cplUplift,
+                    techs: parseInt(document.getElementById('techs_' + i).value) || dma.techs
                 });
             }
             return results;
@@ -470,10 +607,9 @@
 
         function getGlobals() {
             return {
-                bookingRate: (parseInt(document.getElementById('bookingRate').value) || 25) / 100,
                 completionRate: (parseInt(document.getElementById('completionRate').value) || 80) / 100,
-                avgTicket: parseInt(document.getElementById('avgTicket').value) || 179,
-                grossMargin: (parseInt(document.getElementById('grossMargin').value) || 30) / 100
+                grossMargin: (parseInt(document.getElementById('grossMargin').value) || 30) / 100,
+                measurementPct: (parseInt(document.getElementById('measurementPct').value) || 4) / 100
             };
         }
 
@@ -481,8 +617,14 @@
             var rows = [];
             var sensMult = sensitivity[sensLabel];
             
-            // Measurement row
-            var measSpend = dma.spend * measurementPct;
+            // Enhanced booking rate with trust factor and coupon
+            var booking = dma.bookingBase;
+            if (addCoupon && dma.priceSensitive) {
+                booking += 0.03; // +3 ppt coupon bump for price-sensitive DMAs
+            }
+            
+            // Measurement reserve
+            var measSpend = dma.spend * globals.measurementPct;
             rows.push({
                 sensitivity: sensLabel,
                 mix: mixName,
@@ -492,7 +634,8 @@
                 leads: 0,
                 creates: 0,
                 completed: 0,
-                profit: -measSpend
+                profit: -measSpend,
+                effectiveCPL: 0
             });
 
             var remainingSpend = dma.spend - measSpend;
@@ -505,8 +648,8 @@
                 var langSplits = [];
                 if (ch === "Meta" || ch === "CTV") {
                     langSplits = [
-                        ["EN", 1 - dma.spanishShare, channelSpend], 
-                        ["ES", dma.spanishShare, channelSpend]
+                        ["_EN", 1 - dma.spanishShare, channelSpend], 
+                        ["_ES", dma.spanishShare, channelSpend]
                     ];
                 } else {
                     langSplits = [["", 1, channelSpend]];
@@ -520,10 +663,17 @@
                     if (pct === 0) continue;
                     
                     spend *= pct;
-                    var label = ch + (suffix ? '_' + suffix : '');
+                    var label = ch + suffix;
                     
                     var channel = channels[ch];
-                    var unitCost = channel.unitCost * sensMult;
+                    var unitCost = channel.unitCost;
+                    
+                    // Apply CPL uplift and sensitivity
+                    if (channel.type === "CPL") {
+                        unitCost = unitCost * dma.cplUplift * sensMult;
+                    } else {
+                        unitCost = unitCost * sensMult;
+                    }
                     
                     var leads;
                     if (channel.type === "CPL") {
@@ -531,17 +681,18 @@
                     } else {
                         var imps = (spend / unitCost) * 1000;
                         if (ch === "CTV") {
-                            leads = imps * 0.01;
+                            leads = imps * 0.01 * sensMult;
                         } else if (ch === "pDOOH" || ch === "Static_OOH") {
                             leads = imps * 0.0003;
                         } else { // Meta
-                            leads = imps * channel.ctr * channel.c2l;
+                            leads = imps * channel.ctr * channel.c2l * sensMult;
                         }
                     }
 
-                    var creates = leads * globals.bookingRate;
+                    var creates = leads * booking;
                     var completed = creates * globals.completionRate;
-                    var profit = completed * globals.avgTicket * globals.grossMargin;
+                    var profit = completed * dma.avgTicket * sensMult * globals.grossMargin;
+                    var effectiveCPL = leads > 0 ? spend / leads : 0;
 
                     rows.push({
                         sensitivity: sensLabel,
@@ -552,7 +703,9 @@
                         leads: leads,
                         creates: creates,
                         completed: completed,
-                        profit: profit
+                        profit: profit,
+                        effectiveCPL: effectiveCPL,
+                        booking: booking
                     });
                 }
             }
@@ -591,6 +744,7 @@
                 }
 
                 updateDisplays();
+                updateAssumptionsLog();
             } catch (error) {
                 console.error('Error in calculateScenarios:', error);
                 alert('Error calculating scenarios. Please check your inputs.');
@@ -617,6 +771,8 @@
                 totalProfit += currentResults[i].profit || 0;
             }
 
+            var roi = totalSpend > 0 ? ((totalProfit / totalSpend) * 100) : 0;
+
             document.getElementById('summaryCards').innerHTML = 
                 '<div class="summary-card">' +
                     '<h3>Total Spend</h3>' +
@@ -633,6 +789,10 @@
                 '<div class="summary-card">' +
                     '<h3>Gross Profit</h3>' +
                     '<div class="value">' + formatCurrency(totalProfit) + '</div>' +
+                '</div>' +
+                '<div class="summary-card">' +
+                    '<h3>Portfolio ROI</h3>' +
+                    '<div class="value">' + roi.toFixed(1) + '%</div>' +
                 '</div>';
         }
 
@@ -653,6 +813,9 @@
                 var totalRepairs = 0;
                 var totalProfit = 0;
                 var hasCapacityIssue = false;
+                var hasCoupon = false;
+                var avgBooking = 0;
+                var bookingCount = 0;
                 
                 for (var j = 0; j < currentResults.length; j++) {
                     var row = currentResults[j];
@@ -662,6 +825,11 @@
                         totalRepairs += row.completed || 0;
                         totalProfit += row.profit || 0;
                         if (row.capacityIssue) hasCapacityIssue = true;
+                        if (row.booking && row.booking > 0.25) {
+                            hasCoupon = true;
+                            avgBooking += row.booking;
+                            bookingCount++;
+                        }
                     }
                 }
                 
@@ -675,6 +843,7 @@
                     '<td>' + formatCurrency(totalProfit) + '</td>' +
                     '<td>' + roi.toFixed(1) + '%</td>' +
                     '<td>' + (hasCapacityIssue ? '<span class="capacity-warning">⚠ Capacity Issue</span>' : '✓ OK') + '</td>' +
+                    '<td>' + (hasCoupon ? '<span class="coupon-indicator">✓ Active</span>' : '—') + '</td>' +
                 '</tr>';
             }
             
@@ -696,6 +865,7 @@
                     '<td>' + formatNumber(row.creates || 0) + '</td>' +
                     '<td>' + formatNumber(row.completed || 0) + '</td>' +
                     '<td>' + formatCurrency(row.profit || 0) + '</td>' +
+                    '<td>' + formatCurrency(row.effectiveCPL || 0) + '</td>' +
                 '</tr>';
             }
             
@@ -705,6 +875,7 @@
         function updateCharts() {
             updateSpendChart();
             updateChannelChart();
+            updateBookingChart();
         }
 
         function updateSpendChart() {
@@ -741,8 +912,8 @@
                     datasets: [{
                         label: 'Total Spend ($)',
                         data: spendData,
-                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                        borderColor: 'rgba(102, 126, 234, 1)',
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c'],
+                        borderColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c'],
                         borderWidth: 1
                     }]
                 },
@@ -771,22 +942,33 @@
                 if (row.channel === 'Measurement') continue;
                 
                 var baseChannel = row.channel.split('_')[0];
-                channelData[baseChannel] = (channelData[baseChannel] || 0) + (row.profit || 0);
+                if (!channelData[baseChannel]) {
+                    channelData[baseChannel] = {spend: 0, profit: 0};
+                }
+                channelData[baseChannel].spend += row.spend || 0;
+                channelData[baseChannel].profit += row.profit || 0;
+            }
+
+            var labels = Object.keys(channelData);
+            var roiData = [];
+            for (var i = 0; i < labels.length; i++) {
+                var channel = labels[i];
+                var roi = channelData[channel].spend > 0 ? 
+                    (channelData[channel].profit / channelData[channel].spend) * 100 : 0;
+                roiData.push(roi);
             }
 
             if (channelChart) {
                 channelChart.destroy();
             }
 
-            var labels = Object.keys(channelData);
-            var data = Object.values(channelData);
-
             channelChart = new Chart(ctx, {
-                type: 'doughnut',
+                type: 'bar',
                 data: {
                     labels: labels,
                     datasets: [{
-                        data: data,
+                        label: 'ROI (%)',
+                        data: roiData,
                         backgroundColor: [
                             '#667eea', '#764ba2', '#f093fb', '#f5576c',
                             '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
@@ -795,13 +977,103 @@
                 },
                 options: {
                     responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'right'
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(1) + '%';
+                                }
+                            }
                         }
                     }
                 }
             });
+        }
+
+        function updateBookingChart() {
+            var ctx = document.getElementById('bookingChart').getContext('2d');
+            
+            var dmaNames = [];
+            var bookingRates = [];
+            
+            for (var i = 0; i < dmaData.length; i++) {
+                var dma = dmaData[i];
+                var booking = dma.bookingBase;
+                if (addCoupon && dma.priceSensitive) {
+                    booking += 0.03;
+                }
+                dmaNames.push(dma.name);
+                bookingRates.push(booking * 100);
+            }
+
+            if (bookingChart) {
+                bookingChart.destroy();
+            }
+
+            bookingChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: dmaNames,
+                    datasets: [{
+                        data: bookingRates,
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'right'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.toFixed(1) + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateAssumptionsLog() {
+            var timestamp = new Date().toISOString();
+            var mixName = document.getElementById('mixSelect').value;
+            var sensLabel = document.getElementById('sensitivitySelect').value;
+            var globals = getGlobals();
+            var dmaInputs = getDMAInputs();
+            
+            var logHTML = '<h3>Assumptions Log - ' + timestamp.split('T')[0] + '</h3><br>';
+            
+            logHTML += '<strong>Global Settings:</strong><br>';
+            logHTML += 'Mix: ' + mixName + '<br>';
+            logHTML += 'Sensitivity: ' + sensLabel + '<br>';
+            logHTML += 'Coupon Active: ' + (addCoupon ? 'Yes' : 'No') + '<br>';
+            logHTML += 'Completion Rate: ' + (globals.completionRate * 100).toFixed(0) + '%<br>';
+            logHTML += 'Gross Margin: ' + (globals.grossMargin * 100).toFixed(0) + '%<br>';
+            logHTML += 'Measurement Reserve: ' + (globals.measurementPct * 100).toFixed(0) + '%<br><br>';
+            
+            logHTML += '<strong>DMA Parameters:</strong><br>';
+            for (var i = 0; i < dmaInputs.length; i++) {
+                var dma = dmaInputs[i];
+                logHTML += dma.name + ':<br>';
+                logHTML += '  Spanish Share: ' + (dma.spanishShare * 100).toFixed(0) + '%<br>';
+                logHTML += '  Booking Base: ' + (dma.bookingBase * 100).toFixed(0) + '%<br>';
+                logHTML += '  Avg Ticket:  + dma.avgTicket + '<br>';
+                logHTML += '  CPL Uplift: ' + dma.cplUplift.toFixed(2) + 'x<br>';
+                logHTML += '  Technicians: ' + dma.techs + '<br>';
+                logHTML += '  Price Sensitive: ' + (dma.priceSensitive ? 'Yes' : 'No') + '<br><br>';
+            }
+            
+            logHTML += '<strong>Media Mix (' + mixName + '):</strong><br>';
+            var mix = mixes[mixName];
+            for (var channel in mix) {
+                logHTML += channel + ': ' + (mix[channel] * 100).toFixed(0) + '%<br>';
+            }
+            
+            document.getElementById('assumptionsLog').innerHTML = logHTML;
         }
 
         function showTab(tabName) {
@@ -834,7 +1106,7 @@
                 return;
             }
 
-            var headers = ['Sensitivity', 'Mix', 'DMA', 'Channel', 'Spend', 'Leads', 'Creates', 'Completed', 'Gross_Profit'];
+            var headers = ['Sensitivity', 'Mix', 'DMA', 'Channel', 'Spend', 'Leads', 'Creates', 'Completed', 'Gross_Profit', 'Effective_CPL', 'Booking_Rate'];
             var csvContent = headers.join(',') + '\n';
             
             for (var i = 0; i < currentResults.length; i++) {
@@ -848,7 +1120,9 @@
                     (row.leads || 0).toFixed(2),
                     (row.creates || 0).toFixed(2),
                     (row.completed || 0).toFixed(2),
-                    (row.profit || 0).toFixed(2)
+                    (row.profit || 0).toFixed(2),
+                    (row.effectiveCPL || 0).toFixed(2),
+                    (row.booking || 0).toFixed(3)
                 ].join(',') + '\n';
             }
 
@@ -856,7 +1130,7 @@
             var url = window.URL.createObjectURL(blob);
             var a = document.createElement('a');
             a.href = url;
-            a.download = 'sears_scenario_results.csv';
+            a.download = 'sears_scenario_planner_v5_results.csv';
             a.click();
             window.URL.revokeObjectURL(url);
         }
